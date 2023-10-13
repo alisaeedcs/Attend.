@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>School Website - Attendance</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        /* Add vertical spacing between table rows */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2; /* Set even rows to light gray */
+        }
+
+        tr:hover {
+            background-color: #fffd84; /* Change background color to yellow on hover */
+        }
+
+        th, td {
+            padding: 10px; /* Adjust the padding to control vertical spacing */
+        }
+        /* Style the numbers on the left */
+        .student-number {
+            font-weight: thin;
+            padding-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Student Attendance</h1>
+        <nav>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="attendance.html">Attendance</a></li>
+                <li><a href="attendance_face.html">Facial Recognition</a></li> <!-- New page link -->
+                <li><a href="about.html">About</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <h2>Take Attendance</h2>
+        <label for="period-selector">Select Period:</label>
+        <select id="period-selector">
+            <option value="period1">Period 1</option>
+            <option value="period2">Period 2</option>
+            <!-- Add more options for other periods -->
+        </select>
+        <button type="button" id="markAllPresentButton">Mark All Present</button>
+        <button type="button" id="markAllAbsentButton">Mark All Absent</button>
+        <button type="button" id="markAllLateButton">Mark All Late</button>
+        <p>Use the form below to mark student attendance.</p>
+        <form id="attendanceForm">
+            <table>
+                <tr>
+                    <th>Number</th>       
+                    <th>Name</th>
+                    <th>Status</th>
+                </tr>
+            </table>
+            <button type="button" id="submitButton">Submit</button>
+            <button type="button" id="saveButton">Save</button>
+        </form>        
+    </main>
+    <footer>
+        &copy; Attend.
+    </footer>
+    <script src="js/script.js"></script>
+    <script>
+        // JavaScript to dynamically generate student names and handle mark buttons
+        document.addEventListener("DOMContentLoaded", function () {
+            const form = document.getElementById("attendanceForm");
+            const table = form.querySelector("table");
+            const periodSelector = document.getElementById("period-selector");
+            let studentNames = []; // Define the studentNames array at a broader scope
+            let attendanceData = []; // Array to store attendance status
+
+            // Define student name sets for different periods
+            const periodSets = {
+                period1: ["Ali Saeed", "Jason Miller", "Christian Osbey"],
+                period2: ["Muaaz Mohammed", "Brandon Reyes", "James Degennaro"],
+                // Define more sets as needed
+            };
+
+            // Function to update the displayed student names based on the selected period
+            function updateStudentNames(selectedPeriod) {
+                studentNames = periodSets[selectedPeriod]; // Update the studentNames array
+                // Clear the existing table rows
+                table.innerHTML = "";
+
+                // Generate table rows for the selected student names
+                studentNames.forEach(function (studentName, i) {
+                    const row = document.createElement("tr");
+                    const numberCell = document.createElement("td");
+                    const nameCell = document.createElement("td");
+                    const statusCell = document.createElement("td");
+
+                    numberCell.textContent = i + 1;
+                    numberCell.className = "student-number";
+
+                    nameCell.innerHTML = `<span class="student-name">${studentName}</span>`;
+                    statusCell.innerHTML = `
+                        <input type="radio" name="status${i}" value="present">
+                        <label for="present${i}">Present</label>
+                        <input type="radio" name="status${i}" value="absent">
+                        <label for="absent${i}">Absent</label>
+                        <input type="radio" name="status${i}" value="late">
+                        <label for="late${i}">Late</label>
+                    `;
+
+                    row.appendChild(numberCell);
+                    row.appendChild(nameCell);
+                    row.appendChild(statusCell);
+                    table.appendChild(row);
+                });
+            }
+
+            // Initial update based on the selected period
+            updateStudentNames(periodSelector.value);
+
+            // Update when the period selection changes
+            periodSelector.addEventListener("change", function () {
+                const selectedPeriod = periodSelector.value;
+                updateStudentNames(selectedPeriod);
+            });
+
+            // Button to mark all as present
+            const markAllPresentButton = document.getElementById("markAllPresentButton");
+            markAllPresentButton.addEventListener("click", function () {
+                for (let i = 0; i < studentNames.length; i++) {
+                    const presentRadio = document.querySelector(`input[name="status${i}"][value="present"]`);
+                    presentRadio.checked = true;
+                    updateAttendanceData(i, "present");
+                }
+            });
+
+            // Button to mark all as absent
+            const markAllAbsentButton = document.getElementById("markAllAbsentButton");
+            markAllAbsentButton.addEventListener("click", function () {
+                for (let i = 0; i < studentNames.length; i++) {
+                    const absentRadio = document.querySelector(`input[name="status${i}"][value="absent"]`);
+                    absentRadio.checked = true;
+                    updateAttendanceData(i, "absent");
+                }
+            });
+
+            // Button to mark all as late
+            const markAllLateButton = document.getElementById("markAllLateButton");
+            markAllLateButton.addEventListener("click", function () {
+                for (let i = 0; i < studentNames.length; i++) {
+                    const lateRadio = document.querySelector(`input[name="status${i}"][value="late"]`);
+                    lateRadio.checked = true;
+                    updateAttendanceData(i, "late");
+                }
+            });
+
+            // Function to handle the form submission
+            function handleSubmit(event) {
+                event.preventDefault(); // Prevent the default form submission
+
+                // Create a text representation of the attendance records
+                const attendanceRecords = [];
+                for (let i = 0; i < studentNames.length; i++) {
+                    const studentName = studentNames[i];
+                    const statusRadio = document.querySelector(`input[name="status${i}"]:checked`);
+                    if (statusRadio) {
+                        const status = statusRadio.value;
+                        attendanceRecords.push(`${studentName}: ${status}`);
+                        // Clear the selection after saving
+                        statusRadio.checked = false;
+                    }
+                }
+
+                // Create a Blob with the attendance records
+                const blob = new Blob([attendanceRecords.join('\n')], { type: 'text/plain' });
+
+                // Create a download link and trigger the download
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'attendance.txt';
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }
+
+            // Add a submit event listener to the form
+            const submitButton = document.getElementById("submitButton");
+            submitButton.addEventListener("click", handleSubmit);
+
+
+
+            // Add a submit event listener to the form
+            form.addEventListener("submit", handleSubmit);
+
+            // Button to save attendance status
+            const saveButton = document.getElementById("saveButton");
+            saveButton.addEventListener("click", function () {
+                // Save the attendance data
+                localStorage.setItem("attendanceData", JSON.stringify(attendanceData));
+                alert("Attendance data saved.");
+            });
+
+            // Function to update the attendance data
+            function updateAttendanceData(index, status) {
+                attendanceData[index] = status;
+            }
+
+            // Load saved attendance data (if available) when the page loads
+            const savedData = localStorage.getItem("attendanceData");
+            if (savedData) {
+                attendanceData = JSON.parse(savedData);
+                // Apply the saved data to the form
+                attendanceData.forEach(function (status, i) {
+                    const statusRadio = document.querySelector(`input[name="status${i}"][value="${status}"]`);
+                    if (statusRadio) {
+                        statusRadio.checked = true;
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

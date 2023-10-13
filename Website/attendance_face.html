@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Facial Recognition Attendance</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/face-api.js"></script> <!-- Include face-api.js library -->
+    <style>
+        /* Add any additional CSS styling here */
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Facial Recognition Attendance</h1>
+        <nav>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="attendance.html">Attendance</a></li>
+                <li><a href="attendance_face.html">Facial Recognition</a></li> <!-- New page link -->
+                <li><a href="about.html">About</a></li>
+
+            </ul>
+        </nav>
+    </header>
+    <main>
+        <h2>Facial Recognition Attendance System</h2>
+        <p>Welcome to our Facial Recognition Attendance system. Please use the camera for facial recognition below.</p>
+        <video id="camera" width="320" height="240" autoplay></video>
+        <canvas id="overlay" width="320" height="240"></canvas> <!-- Add a canvas for rendering facial recognition results -->
+        <button id="startButton">Start Recognition</button>
+        <button id="stopButton">Stop Recognition</button>
+    </main>
+    <footer>
+        &copy; 2023 Attend.
+    </footer>
+    <script>
+        // JavaScript code for facial recognition
+        // Get video and canvas elements
+        const video = document.getElementById('camera');
+        const overlay = document.getElementById('overlay');
+        const startButton = document.getElementById('startButton');
+        const stopButton = document.getElementById('stopButton');
+
+        // Function to start the camera and perform facial recognition
+        async function startCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+
+                // Load face-api.js models
+                await faceapi.nets.tinyFaceDetector.load('/models');
+                await faceapi.nets.faceLandmark68Net.load('/models');
+                await faceapi.nets.faceRecognitionNet.load('/models');
+
+                startButton.disabled = true;
+                stopButton.disabled = false;
+
+                video.addEventListener('play', async () => {
+                    const canvas = faceapi.createCanvasFromMedia(video);
+                    document.body.append(canvas);
+                    const displaySize = { width: video.width, height: video.height };
+                    faceapi.matchDimensions(canvas, displaySize);
+
+                    setInterval(async () => {
+                        const detections = await faceapi.detectAllFaces(video,
+                            new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks().withFaceDescriptors();
+                        const resizedDetections = faceapi.resizeResults(detections, displaySize);
+                        canvas
+                            .getContext('2d')
+                            .clearRect(0, 0, canvas.width, canvas.height);
+                        faceapi.draw.drawDetections(canvas, resizedDetections);
+                        faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
+                    }, 100);
+                });
+            } catch (error) {
+                console.error('Error accessing the camera:', error);
+            }
+        }
+
+        // Function to stop the camera
+        function stopCamera() {
+            const stream = video.srcObject;
+            const tracks = stream.getTracks();
+            tracks.forEach(track => track.stop());
+            video.srcObject = null;
+
+            startButton.disabled = false;
+            stopButton.disabled = true;
+        }
+
+        startButton.addEventListener('click', startCamera);
+        stopButton.addEventListener('click', stopCamera);
+    </script>
+</body>
+</html>
