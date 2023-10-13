@@ -1,2 +1,2 @@
 # Attend.
-By: Ali Saeed and Christian Osbey
+By: Ali Saeed
